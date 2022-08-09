@@ -1,15 +1,11 @@
 #include <Arduino.h>
 #include <SPI.h>
 #include <Wire.h>
-// #include <Adafruit_GFX.h>
-#include <Adafruit_SSD1306.h>
 
-#define SCREEN_WIDTH 128    // OLED display width, in pixels
-#define SCREEN_HEIGHT 32    // OLED display height, in pixels
-#define OLED_RESET -1       // Reset pin # (or -1 if sharing Arduino reset pin)
-#define SCREEN_ADDRESS 0x3C ///< See datasheet for Address; 0x3D for 128x64, 0x3C for 128x32
-Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+#include <U8g2lib.h>
 
+// U8X8_SSD1306_128X32_UNIVISION_HW_I2C u8x8(/* reset=*/ U8X8_PIN_NONE);
+U8G2_SSD1306_128X32_UNIVISION_F_HW_I2C u8g2(U8G2_R0, /* reset=*/ U8X8_PIN_NONE, /* clock=*/ SCL, /* data=*/ SDA);
 
 // ntc
 // 
@@ -51,32 +47,19 @@ void setup()
     );
   }
   // pinMode(ANALOG_IN_PIN, INPUT);
-  //default is 10-bit ADC (arduino-compatibility).
-  //change to 12-bit ADC
+  // change to 12-bit ADC. default is 10-bit ADC (arduino-compatibility).
   analogReadResolution(12);
 
   Serial.println(F("SSD1306 ..."));
-  // SSD1306_SWITCHCAPVCC = generate display voltage from 3.3V internally
-  if (!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS))
-  {
-    Serial.println(F("SSD1306 allocation failed"));
-    for (;;)
-      ; // Don't proceed, loop forever
-  }
-  display.setTextSize(1);              // Normal 1:1 pixel scale
-  display.setTextColor(SSD1306_WHITE); // Draw white text
-  display.clearDisplay();
-  display.display();
+
+  u8g2.begin();
 }
 
 void loop()
 {
-  display.clearDisplay();
-
-  display.setCursor(0, 0);
-  display.setTextSize(1);              // Normal 1:1 pixel scale
-  display.println("Temperature(C)");
-  display.setTextSize(2);              // Normal 1:1 pixel scale
+  u8g2.clearBuffer();					// clear the internal memory
+  u8g2.setFont(u8g2_font_ncenB08_tr);	// choose a suitable font
+  u8g2.drawStr(0,9,"Temperature(C)");	// write something to the internal memory
 
   // ntc
   // 
@@ -88,16 +71,15 @@ void loop()
     Serial.print(": ");
     Serial.print(celsius);
     Serial.print(" C, \t");
-
     sprintf(buf1, "%3d.%01d", int(celsius), abs(int(celsius * 10) %10));
     Serial.print(buf1);
     Serial.println(" C");
 
-    display.setCursor(i*128/N_THERM, 10);
-    display.print(buf1);
+    u8g2.setFont(u8g2_font_10x20_tn );	// choose a suitable font
+    u8g2.drawStr(i*128/N_THERM,31, buf1);	// write something to the internal memory
   }
   Serial.println("");
+  u8g2.sendBuffer();					// transfer internal memory to the display
 
-  display.display();
   delay(500);
 }
